@@ -98,8 +98,7 @@ public class ClientStarter implements ApplicationRunner {
     	}
     	
     	if(props.getProperty("upvRegistry.url")!=null){
-    		System.out.println(device.toString());
-    		System.out.println(HTTPClient.post(props.getProperty("upvRegistry.url"), device.toString(), true, "application/json"));
+    		HTTPClient.post(props.getProperty("upvRegistry.url"), device.toString(), true, "application/json");
     	}else{
 	    	/*Map<String, String> map = eurekaManager.getEurekaInstanceConfig().getMetadataMap();
 	    	map.put("microservices", device.toString());
