@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.Properties;
 
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.netflix.appinfo.ApplicationInfoManager;
+//import com.netflix.appinfo.ApplicationInfoManager;
 
 import es.upv.pros.pvalderas.http.HTTPClient;
 import es.upv.pros.pvalderas.microservice.iotdevice.annotations.Actuation;
@@ -39,8 +40,8 @@ public class ClientStarter implements ApplicationRunner {
 	@Autowired
 	private ApplicationContext context;
 	
-	@Autowired
-	private ApplicationInfoManager eurekaManager;
+	//@Autowired
+	//private ApplicationInfoManager eurekaManager;
 	
 	 
     @Override
@@ -65,12 +66,26 @@ public class ClientStarter implements ApplicationRunner {
     private void registerIoTDevice() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, JSONException, IOException {
         
     	
+    	
     	Properties props=getProperties();
+    	
+    	String microserviceIP = props.getProperty("server.ip")!=null?props.getProperty("server.ip"):InetAddress.getLocalHost().getHostAddress();
+    	String microservicePort = props.getProperty("server.port")!=null?props.getProperty("server.port"):"8080";
+    	String microserviceProtocol="";
+        if(props.getProperty("server.ssl.enabled")!=null && props.getProperty("server.ssl.enabled")=="true")
+        	microserviceProtocol="https://";
+        else
+        	microserviceProtocol="http://";
+        
     	
     	JSONObject device=new JSONObject();
     	device.put("name", props.getProperty("spring.application.name"));
     	device.put("iotDevice", props.getProperty("spring.application.iotDevice"));
-    	device.put("system", props.getProperty("spring.application.system"));
+    	device.put("system", props.getProperty("spring.application.system.id"));
+    	device.put("systemName", props.getProperty("spring.application.system.name"));
+    	device.put("microserviceIP", microserviceIP);
+    	device.put("microservicePort", microservicePort);
+    	device.put("microserviceProtocol", microserviceProtocol);
     	
     	Map<String,Object> actuator=context.getBeansWithAnnotation(RestController.class);
     	if(actuator.size()>0){
@@ -82,12 +97,13 @@ public class ClientStarter implements ApplicationRunner {
     		device.put("observations", getObservatiosn(sensor));
     	}
     	
-    	if(props.getProperty("microserviceEmu.url")!=null)
-    		System.out.println(HTTPClient.post(props.getProperty("microserviceEmu.url"), device.toString(), true, "application/json"));
-    	else{
-	    	Map<String, String> map = eurekaManager.getEurekaInstanceConfig().getMetadataMap();
+    	if(props.getProperty("upvRegistry.url")!=null){
+    		System.out.println(device.toString());
+    		System.out.println(HTTPClient.post(props.getProperty("upvRegistry.url"), device.toString(), true, "application/json"));
+    	}else{
+	    	/*Map<String, String> map = eurekaManager.getEurekaInstanceConfig().getMetadataMap();
 	    	map.put("microservices", device.toString());
-	    	eurekaManager.initComponent(eurekaManager.getEurekaInstanceConfig());
+	    	eurekaManager.initComponent(eurekaManager.getEurekaInstanceConfig());*/
     	}
    }
     
